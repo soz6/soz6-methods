@@ -1,0 +1,38 @@
+<?php 
+function topicphotos($topic_id){
+ 
+  // Get topic ID and sanitize it
+  $topic_id = mysqli_real_escape_string($GLOBALS['dbconnect'], $topic_id);
+
+  // Increase the max length for GROUP_CONCAT
+  mysqli_query($GLOBALS['dbconnect'], "SET SESSION group_concat_max_len = 1000000;");
+
+  // Retrieve combined content from the database
+  $result = mysqli_query($GLOBALS['dbconnect'], "SELECT GROUP_CONCAT(content SEPARATOR ' ') AS combined_content FROM posts WHERE topicid = '$topicid' GROUP BY topic_id");
+  $row = mysqli_fetch_assoc($result);
+
+  // Extract image links with the ".jpg" extension from the combined content
+  $combined_content = $row['combined_content'];
+  $image_links = [];
+  preg_match_all('/\b((?:https?:\/\/)?\S+\.(jpg|jpeg|png|gif))\b/i', $combined_content, $image_links);
+
+  // Display the images side by side
+  if (!empty($image_links[0])) {
+      echo '<div style="display:flex;">';
+      $limit = 5; // Limit to the first 5 images
+      $count = 0;
+      foreach ($image_links[0] as $image_link) {
+          if ($count == $limit) {
+              break;
+          }
+          if(strpos($image_link, 'http://') !== 0 && strpos($image_link, 'https://') !== 0){
+              $image_link = 'http://' . $image_link;
+          }
+          echo '<a href="' . $image_link . '" target="_blank" style="border:2px solid #000; border-radius:10px; overflow:hidden; width:200px; height:auto; margin:10px;">';
+          echo '<img class="lazyload"  alt="başlığa get - loading"   title="başlığa get - loading"src=" ' . $image_link . '" style="width:100%; height:auto;">';
+          echo '</a>';
+          $count++;
+      }
+      echo '</div>';
+  } 
+?>
